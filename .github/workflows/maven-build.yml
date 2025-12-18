@@ -38,4 +38,11 @@ jobs:
           context: .
           push: true
           # Replace 'your-username' with your actual Docker Hub username
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:${{ github.run_number }}
+      
+      - name: Validate Kubernetes Manifests
+        run: |
+          kubectl apply --dry-run=client -f k8s/db.yml
+          kubectl apply --dry-run=client -f k8s/petclinic.yml
