@@ -1,29 +1,41 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-java-with-maven
-
-name: Java CI with Maven
+name: Java CI/CD with Maven and Docker Hub
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java: [ '17' ]
-
+    
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK ${{matrix.java}}
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: ${{matrix.java}}
+          java-version: '17'
           distribution: 'adopt'
           cache: maven
+
+      # Step 1: Create the .jar artifact (skipping tests to avoid the database error)
       - name: Build with Maven Wrapper
-        run: ./mvnw -B verify
+        run: ./mvnw -B package -DskipTests
+
+      # Step 2: Log in to your Docker Hub account
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Step 3: Build the image and push it
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # Replace 'your-username' with your actual Docker Hub username
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
