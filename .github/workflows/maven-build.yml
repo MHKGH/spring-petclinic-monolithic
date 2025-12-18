@@ -42,7 +42,10 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:${{ github.run_number }}
       
+      - name: Setup Kubeconform
+        uses: bmuschko/setup-kubeconform@v1
+
       - name: Validate Kubernetes Manifests
-        run: |
-          kubectl apply --dry-run=client --validate=false -f k8s/db.yml
-          kubectl apply --dry-run=client --validate=false -f k8s/petclinic.yml
+        # -summary: Shows a clean report
+        # -strict: Catches small typos (very helpful!)
+        run: kubeconform -summary -strict k8s/
