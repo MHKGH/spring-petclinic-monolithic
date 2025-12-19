@@ -52,11 +52,13 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # Use the --kubeconfig flag to point directly to the file
-          # We use --validate=false to skip the server-side schema check
+          # 1. Create a temporary directory for the config
+          mkdir -p $HOME/.kube
           
-          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/db.yml --validate=false
+          # 2. Decode the secret into a real file
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
           
-          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/petclinic.yml --validate=false
-          
-          kubectl --kubeconfig=/home/hemanth/.kube/config rollout restart deployment/petclinic
+          # 3. Deploy using the local file
+          kubectl apply -f k8s/db.yml --validate=false
+          kubectl apply -f k8s/petclinic.yml --validate=false
+          kubectl rollout restart deployment/petclinic
