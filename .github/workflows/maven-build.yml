@@ -52,7 +52,13 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          kubectl apply -f k8s/db.yml
-          kubectl apply -f k8s/petclinic.yml
-          # Forces Kubernetes to pull the new image even if the tag is 'latest'
+          # Use absolute path to ensure the runner finds it
+          export KUBECONFIG=/home/hemanth/.kube/config
+          
+          # Use --validate=false because we already validated with kubeconform
+          # This prevents kubectl from trying to reach a server just for 'schema checks'
+          kubectl apply -f k8s/db.yml --validate=false
+          kubectl apply -f k8s/petclinic.yml --validate=false
+          
+          # Force the update
           kubectl rollout restart deployment/petclinic
