@@ -49,3 +49,10 @@ jobs:
         # -summary: Shows a clean report
         # -strict: Catches small typos (very helpful!)
         run: kubeconform -summary -strict k8s/
+
+      - name: Deploy to Minikube
+        run: |
+          kubectl apply -f k8s/db.yml
+          kubectl apply -f k8s/petclinic.yml
+          # Forces Kubernetes to pull the new image even if the tag is 'latest'
+          kubectl rollout restart deployment/petclinic
