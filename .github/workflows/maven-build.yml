@@ -52,13 +52,11 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # Use absolute path to ensure the runner finds it
-          export KUBECONFIG=/home/hemanth/.kube/config
+          # Use the --kubeconfig flag to point directly to the file
+          # We use --validate=false to skip the server-side schema check
           
-          # Use --validate=false because we already validated with kubeconform
-          # This prevents kubectl from trying to reach a server just for 'schema checks'
-          kubectl apply -f k8s/db.yml --validate=false
-          kubectl apply -f k8s/petclinic.yml --validate=false
+          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/db.yml --validate=false
           
-          # Force the update
-          kubectl rollout restart deployment/petclinic
+          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/petclinic.yml --validate=false
+          
+          kubectl --kubeconfig=/home/hemanth/.kube/config rollout restart deployment/petclinic
