@@ -1,68 +1,57 @@
-name: Java CI/CD with Maven and Docker Hub
+name: Java CI/CD with Managed Minikube and Assurance
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    # Use GitHub's standard runner for a 100% clean environment
+    runs-on: ubuntu-latest 
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'adopt'
+          distribution: 'temurin'
           cache: maven
 
-      # Step 1: Create the .jar artifact (skipping tests to avoid the database error)
-      - name: Build with Maven Wrapper
+      # 1. SETUP: Starts a fresh Minikube cluster inside the runner
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          container-runtime: docker
+
+      - name: Build with Maven
         run: ./mvnw -B package -DskipTests
 
-      # Step 2: Log in to your Docker Hub account
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # Step 3: Build the image and push it
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          # Replace 'your-username' with your actual Docker Hub username
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:${{ github.run_number }}
-      
-      - name: Setup Kubeconform
-        uses: bmuschko/setup-kubeconform@v1
-
-      - name: Validate Kubernetes Manifests
-        # -summary: Shows a clean report
-        # -strict: Catches small typos (very helpful!)
-        run: kubeconform -summary -strict k8s/
-
-      - name: Set Kubernetes Context
-        uses: azure/k8s-set-context@v3
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_DATA }}
-
+      # 2. DEPLOY: Applies manifests to the dedicated cluster
       - name: Deploy to Minikube
         run: |
-          # Use the --kubeconfig flag to force the use of your local file
-          # Use --validate=false to prevent it from calling localhost for schema checks
+          kubectl apply -f k8s/db.yml
+          kubectl apply -f k8s/petclinic.yml
+
+      # 3. ASSURANCE: Verification steps acting as your "eyes"
+      - name: Wait for Pod Readiness
+        run: |
+          # Waits up to 3 mins for pods with label 'app=petclinic' to be Ready
+          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=180s
+
+      - name: Verify Webpage (Smoke Test)
+        run: |
+          # Get the internal URL for the petclinic service
+          SERVICE_URL=$(minikube service petclinic --url)
+          echo "Testing connection to: $SERVICE_URL"
           
-          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/db.yml --validate=false
-          
-          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/petclinic.yml --validate=false
-          
-          kubectl --kubeconfig=/home/hemanth/.kube/config rollout restart deployment/petclinic
+          # Smoke test: Check if the homepage returns a '200 OK' status
+          curl -Is $SERVICE_URL | grep "200 OK" || (echo "Webpage is down!" && exit 1)
+
+      - name: Check Application Logs
+        if: always() # Runs even if the previous step fails to help you debug
+        run: |
+          # Prints the last 50 lines of logs to confirm the DB connection
+          kubectl logs deployment/petclinic --tail=50
