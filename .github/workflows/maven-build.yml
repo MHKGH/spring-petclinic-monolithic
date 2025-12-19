@@ -52,13 +52,13 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # 1. Create a temporary directory for the config
-          mkdir -p $HOME/.kube
+          # 1. Clear any old, stuck configs in the runner's temp space
+          rm -rf $HOME/.kube
           
-          # 2. Decode the secret into a real file
-          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+          # 2. Use minikube's built-in command to generate a fresh config
+          # This command creates the config file automatically using the right IPs
+          minikube kubectl -- apply -f k8s/db.yml
+          minikube kubectl -- apply -f k8s/petclinic.yml
           
-          # 3. Deploy using the local file
-          kubectl apply -f k8s/db.yml --validate=false
-          kubectl apply -f k8s/petclinic.yml --validate=false
-          kubectl rollout restart deployment/petclinic
+          # 3. Restart the deployment
+          minikube kubectl -- rollout restart deployment/petclinic
