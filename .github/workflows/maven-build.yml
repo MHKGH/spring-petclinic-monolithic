@@ -69,3 +69,4 @@ jobs:
           
           # 3. Refresh the app
           kubectl rollout restart deployment/petclinic --insecure-skip-tls-verify
+          #HI
