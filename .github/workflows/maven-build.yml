@@ -58,12 +58,11 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # 1. Point to your local config that works on this laptop
-          export KUBECONFIG=/home/hemanth/.kube/config
+          # Use the --kubeconfig flag to force the use of your local file
+          # Use --validate=false to prevent it from calling localhost for schema checks
           
-          # 2. Deploy directly to the cluster (no complex IP workarounds needed!)
-          kubectl apply -f k8s/db.yml
-          kubectl apply -f k8s/petclinic.yml
+          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/db.yml --validate=false
           
-          # 3. Force a restart to ensure the latest Docker Hub image is used
-          kubectl rollout restart deployment/petclinic
+          kubectl --kubeconfig=/home/hemanth/.kube/config apply -f k8s/petclinic.yml --validate=false
+          
+          kubectl --kubeconfig=/home/hemanth/.kube/config rollout restart deployment/petclinic
