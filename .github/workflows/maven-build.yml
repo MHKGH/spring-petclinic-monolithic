@@ -58,17 +58,16 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # 1. Point the runner to the specific Minikube IP
-          kubectl config set-cluster minikube --server=https://192.168.49.2:8443
+          # 1. Use the special Docker DNS to reach your laptop from inside the container
+          kubectl config set-cluster minikube --server=https://host.docker.internal:8443
           
-          # 2. Set the credentials to use the embedded data 
-          # This clears the 'no such file' error for client.crt/key
+          # 2. Set and use context
           kubectl config set-context minikube --cluster=minikube --user=minikube
           kubectl config use-context minikube
 
-          # 3. Apply manifests (Still using --insecure-skip-tls-verify for the CA)
+          # 3. Apply manifests with insecure flags
           kubectl apply -f k8s/db.yml --insecure-skip-tls-verify --validate=false
           kubectl apply -f k8s/petclinic.yml --insecure-skip-tls-verify --validate=false
           
-          # 4. Refresh the application
+          # 4. Final restart
           kubectl rollout restart deployment/petclinic --insecure-skip-tls-verify
