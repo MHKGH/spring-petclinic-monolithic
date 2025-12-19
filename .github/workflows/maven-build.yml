@@ -52,11 +52,11 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # 1. Clear any old, stuck configs in the runner's temp space
-          rm -rf $HOME/.kube
+          # 1. Force Minikube to look at your specific home directory
+          export MINIKUBE_HOME=/home/hemanth
+          export KUBECONFIG=/home/hemanth/.kube/config
           
-          # 2. Use minikube's built-in command to generate a fresh config
-          # This command creates the config file automatically using the right IPs
+          # 2. Use the minikube binary with the specific profile path
           minikube kubectl -- apply -f k8s/db.yml
           minikube kubectl -- apply -f k8s/petclinic.yml
           
