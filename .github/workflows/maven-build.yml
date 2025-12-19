@@ -52,13 +52,19 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # 1. Force Minikube to look at your specific home directory
-          export MINIKUBE_HOME=/home/hemanth
-          export KUBECONFIG=/home/hemanth/.kube/config
+          # 1. Create a local .kube folder inside the current runner workspace
+          mkdir -p $GITHUB_WORKSPACE/.kube
           
-          # 2. Use the minikube binary with the specific profile path
-          minikube kubectl -- apply -f k8s/db.yml
-          minikube kubectl -- apply -f k8s/petclinic.yml
+          # 2. Copy your laptop's config to this local workspace
+          # We use 'sudo' here because the runner needs a one-time boost to grab the file
+          sudo cp /home/hemanth/.kube/config $GITHUB_WORKSPACE/.kube/config
+          sudo chown $USER:$USER $GITHUB_WORKSPACE/.kube/config
           
-          # 3. Restart the deployment
-          minikube kubectl -- rollout restart deployment/petclinic
+          # 3. Fix the paths inside the copied config so they work from here
+          # Minikube configs use absolute paths which fail inside the runner
+          sed -i 's|/home/hemanth/|/home/hemanth/|g' $GITHUB_WORKSPACE/.kube/config
+          
+          # 4. Deploy using the local workspace config
+          kubectl --kubeconfig=$GITHUB_WORKSPACE/.kube/config apply -f k8s/db.yml --validate=false
+          kubectl --kubeconfig=$GITHUB_WORKSPACE/.kube/config apply -f k8s/petclinic.yml --validate=false
+          kubectl --kubeconfig=$GITHUB_WORKSPACE/.kube/config rollout restart deployment/petclinic
