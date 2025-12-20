@@ -7,7 +7,7 @@ spec:
   type: NodePort
   ports:
     - port: 80
-      targetPort: 8080
+      targetPort: 8080  # Matches the Spring Boot container port
   selector:
     app: petclinic
 
@@ -30,10 +30,24 @@ spec:
     spec:
       containers:
         - name: workload
-          image: mhkd6010/spring-petclinic
+          image: mhkd6010/spring-petclinic:latest
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: postgres
+            # Fixes the 'localhost' error by using the Kubernetes service name
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://demo-db:5432/petclinic
+            # Injects database credentials from your existing secret
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: demo-db
+                  key: username  # Ensure this key matches your secret
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: demo-db
+                  key: password  # Ensure this key matches your secret
             - name: SERVICE_BINDING_ROOT
               value: /bindings
             - name: SPRING_APPLICATION_JSON
