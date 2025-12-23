@@ -1,3 +1,4 @@
+#Hi
 name: Java CI/CD with Managed Minikube and Assurance
 
 on:
@@ -55,3 +56,4 @@ jobs:
         run: |
           # Prints the last 50 lines of logs to confirm the DB connection
           kubectl logs deployment/petclinic --tail=50
+          
