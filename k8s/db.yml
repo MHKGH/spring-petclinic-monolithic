@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: demo-db
-type: servicebinding.io/postgresql
+  name: demo-db-secret
+type: Opaque
 stringData:
   type: "postgresql"
   provider: "postgresql"
@@ -47,17 +47,17 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: demo-db
+                  name: demo-db-secret
                   key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: demo-db
+                  name: demo-db-secret
                   key: password
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: demo-db
+                  name: demo-db-secret
                   key: database
           ports:
             - containerPort: 5432
