@@ -12,8 +12,10 @@ iam:
 
 managedNodeGroups:
   - name: standard-nodes
-    instanceType: t3.small  # t3.small is usually more available in Mumbai
-    desiredCapacity: 2
+    instanceType: t3.small  
+    desiredCapacity: 3   
+    maxSize: 5           
+    minSize: 2
     privateNetworking: false 
     iam:
       withAddonPolicies:
